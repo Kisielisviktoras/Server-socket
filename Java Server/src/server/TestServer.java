@@ -1,5 +1,7 @@
 package server;
 
+import server.observer.QueHandler;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -9,6 +11,7 @@ import java.util.List;
  * Created by Saji on 10/10/2015.
  */
 public class TestServer {
+
     public static void main(String[] args) throws IOException {
 
         ServerSocket serverSocket = null;
@@ -22,39 +25,18 @@ public class TestServer {
             System.err.println("Could not listen on port: 4444.");
             System.exit(1);
         }
-        ConnectionQueHandler queHandler = null;
-        Thread queThread = null;
-        try {
-            queHandler = new ConnectionQueHandler(serverSocket);
-            queThread = new Thread(queHandler);
-            queThread.join();
-            queThread.start();
 
-            while (alive) {
-                List<ChatClientHandler> chatClients = queHandler.getConnectedClients();
-                String message = null;
-                for (ChatClientHandler chatClientHandler : chatClients) {
-                    message = chatClientHandler.getMessage();
-                    if (message != null && message.length() != 0) {
-                        if ("quit!".equals(message)) {
-                            alive = false;
-                            queThread.interrupt();
-                        }
-                        for (ChatClientHandler clientHandler : chatClients) {
-                            if (!chatClientHandler.equals(clientHandler)) {
-                                clientHandler.receive(new Message(chatClientHandler.getClientNumber(), message));
-                            }
-                        }
-                        System.out.println("Char client "+chatClientHandler.getClientNumber()+" sent a message: "+message);
-                    }
-                }
-                queHandler.connectPendingClients();
-            }
+        QueHandler queHandler = null;
+        try {
+            queHandler = new QueHandler(serverSocket);
+            queHandler.start();
+            queHandler.join();
+
         } catch (Exception ex) {
-            System.out.println("Program end");
             ex.printStackTrace();
         } finally {
-            queHandler.destroy();
+            System.out.println("Program end");
+            queHandler.terminate();
             serverSocket.close();
         }
     }

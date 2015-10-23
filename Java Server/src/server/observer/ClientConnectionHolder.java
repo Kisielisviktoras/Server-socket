@@ -1,27 +1,29 @@
-package server;
+package server.observer;
 
+import server.Message;
 
-import java.io.*;
-import java.net.ServerSocket;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Saji on 10/21/2015.
+ * Created by Saji on 10/22/2015.
  */
-public class ChatClientHandler implements Runnable, Receiver {
+public class ClientConnectionHolder extends Observer {
 
     private Socket clientSocket;
     private int clientNumber;
     private PrintWriter out;
     private BufferedReader in;
-    private List<String> messages = new ArrayList<String>();
     private boolean alive = true;
-    private boolean isRunning = false;
 
-    public ChatClientHandler(Socket client, int clientNumber) {
+    public ClientConnectionHolder(Socket client, int clientNumber, Subject subject) {
+        this.subject = subject;
         this.clientSocket = client;
         this.clientNumber = clientNumber;
         try {
@@ -36,47 +38,35 @@ public class ChatClientHandler implements Runnable, Receiver {
 
     @Override
     public void run() {
-        String inputLine = new String("Client: "+clientNumber+" has joined");
-        messages.add(inputLine);
-        isRunning = true;
         try {
             String newLine = "";
             while (alive) {
                 newLine = in.readLine();
                 if (newLine.contains("quit!")) {
-                    destroy();
+                    terminate();
                 }
                 if (!newLine.equals("null")) {
-                    messages.add(newLine);
+                    subject.notifyObservers(new Message(clientNumber, newLine, this));
                 }
             }
         } catch (SocketException exception) {
-            destroy();
         } catch (IOException e) {
-            destroy();
-            e.printStackTrace();
+        } finally {
+            terminate();
         }
     }
 
-    @Override
-    public void receive(Message message) {
-        out.println(message.getMessage());
-    }
-
-    public String getMessage() {
-        if (isRunning && !messages.isEmpty()) {
-            return messages.remove(0);
-        } else {
-            return null;
-        }
-    }
-
-    public void destroy() {
+    public void terminate() {
         System.out.println("Chat client "+clientNumber+ " is being destroyed");
         this.alive = false;
     }
 
     public int getClientNumber() {
         return this.clientNumber;
+    }
+
+    @Override
+    protected void update(Message message) {
+        out.println(message.getMessage());
     }
 }
