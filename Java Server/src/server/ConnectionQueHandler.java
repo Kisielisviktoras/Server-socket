@@ -46,8 +46,6 @@ public class ConnectionQueHandler implements Runnable {
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            } finally {
-                destroy();
             }
         }
 
@@ -56,7 +54,7 @@ public class ConnectionQueHandler implements Runnable {
 
 
     public void destroy() {
-        for (ChatClientHandler chatClientHandler : pendingClientList) {
+        for (ChatClientHandler chatClientHandler : connectedClients) {
             chatClientHandler.receive(new Message(chatClientHandler.getClientNumber(), "Que handler is being destroyed. Disconnected"));
             chatClientHandler.destroy();
         }
@@ -70,6 +68,14 @@ public class ConnectionQueHandler implements Runnable {
             ChatClientHandler client = iterator.next();
             connectedClients.add(client);
             iterator.remove();
+        }
+
+        Iterator<ChatClientHandler> connectedIterator = connectedClients.iterator();
+        while(connectedIterator.hasNext()) {
+            ChatClientHandler client = connectedIterator.next();
+            if(!client.isAlive()) {
+                connectedIterator.remove();
+            }
         }
     }
 

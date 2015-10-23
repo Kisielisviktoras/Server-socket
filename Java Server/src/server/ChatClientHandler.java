@@ -79,4 +79,8 @@ public class ChatClientHandler implements Runnable, Receiver {
     public int getClientNumber() {
         return this.clientNumber;
     }
+
+    public boolean isAlive() {
+        return this.alive;
+    }
 }
